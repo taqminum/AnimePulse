@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff7fb;
+  --foreground: #4b3b47;
+  --primary: #f4a7c3;
+  --secondary: #fff0f6;
+  --accent: #e88fb2;
+  --card: #ffffff;
+  --border: #f3d6e3;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-border: var(--border);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #fff5f8;
+    --foreground: #4a148c;
+    --primary: #ff80ab;
+    --secondary: #fce4ec;
+    --accent: #ff4081;
+    --card: #ffffff;
+    --border: #f8bbd0;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* Cute rounded styles */
+.rounded-cute {
+  border-radius: 1.5rem;
+}
+
+.shadow-cute {
+  box-shadow: 0 10px 25px -5px rgba(255, 128, 171, 0.2), 0 8px 10px -6px rgba(255, 128, 171, 0.1);
+}
+
+.hover-cute:hover {
+  transform: scale(1.02);
+  box-shadow: 0 20px 30px -10px rgba(255, 128, 171, 0.3);
 }
