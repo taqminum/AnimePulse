@@ -48,6 +48,14 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
   const [insight, setInsight] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  const coverSrc =
+    anime.images?.large ||
+    anime.images?.medium ||
+    anime.images?.common ||
+    anime.images?.small ||
+    anime.images?.grid ||
+    '/window.svg';
+
   useEffect(() => {
     if (isOpen && !insight) {
       const fetchInsight = async () => {
@@ -92,7 +100,7 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
             {/* Left: Info */}
             <div className="md:w-1/3 h-64 md:h-auto relative border-r border-[#fce4ec]">
               <img
-                src={anime.images.large}
+                src={coverSrc}
                 alt={anime.name_cn || anime.name}
                 className="w-full h-full object-cover"
               />

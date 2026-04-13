@@ -11,6 +11,14 @@ interface AnimeCardProps {
 }
 
 export const AnimeCard = ({ anime, onClick, index }: AnimeCardProps) => {
+  const coverSrc =
+    anime.images?.medium ||
+    anime.images?.large ||
+    anime.images?.common ||
+    anime.images?.small ||
+    anime.images?.grid ||
+    '/window.svg';
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -29,7 +37,7 @@ export const AnimeCard = ({ anime, onClick, index }: AnimeCardProps) => {
       {/* Cover Image */}
       <div className="flex-shrink-0 w-24 h-32 relative rounded-2xl overflow-hidden shadow-md">
         <img
-          src={anime.images.medium || anime.images.large}
+          src={coverSrc}
           alt={anime.name_cn || anime.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
