@@ -36,7 +36,7 @@ export default function Home() {
 
         uniqueAnime.forEach(anime => {
           const name = (anime.name_cn || anime.name).toLowerCase();
-          const isLongRunning = LONG_RUNNING_KEYWORDS.some(k => name.includes(k.toLowerCase())) || (anime.eps > 100);
+          const isLongRunning = LONG_RUNNING_KEYWORDS.some(k => name.includes(k.toLowerCase())) || ((anime.eps ?? 0) > 100);
           
           if (isLongRunning) {
             longRunning.push(anime);
