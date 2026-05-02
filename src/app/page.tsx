@@ -5,7 +5,7 @@ import { GENRE_OPTIONS, enrichAnimeDetails, getAnimeCalendar } from '../services
 import { Anime, AnimeSummary } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { AnimeDetail } from '../components/AnimeDetail';
-import { Sparkles, TrendingUp, LayoutList, Tags, Flame } from 'lucide-react';
+import { Sparkles, TrendingUp, LayoutList, Tags, Flame, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -25,6 +25,7 @@ interface BilibiliTrend {
 }
 
 type GenreOption = typeof GENRE_OPTIONS[number];
+type ThemeMode = 'light' | 'dark';
 
 const getCompositeHeat = (anime: Anime) => (anime.collection?.doing || 0) + (anime.bilibiliHeat || 0);
 
@@ -43,8 +44,12 @@ export default function Home() {
   const [trendLoading, setTrendLoading] = useState(false);
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
   const [activeGenre, setActiveGenre] = useState<GenreOption>('全部');
+  const [theme, setTheme] = useState<ThemeMode>('light');
 
   useEffect(() => {
+    const currentTheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    setTheme(currentTheme);
+
     const fetchSummaries = async (items: Anime[]) => {
       try {
         const response = await axios.post('/api/anime-summaries', { animeItems: items });
@@ -122,6 +127,13 @@ export default function Home() {
     fetchAndProcessData();
   }, []);
 
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem('animepulse-theme', nextTheme);
+    setTheme(nextTheme);
+  };
+
   const allAnime = sortByCompositeHeat([...animeList, ...longRunningList]);
   const genreCounts = GENRE_OPTIONS.reduce<Record<string, number>>((counts, genre) => {
     counts[genre] = genre === '全部'
@@ -156,11 +168,23 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-card border border-border px-5 py-4 rounded-[1.5rem] shadow-sm shadow-primary/10 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/15">
-            <Flame size={18} className="text-accent" />
-            <div>
-              <div className="text-xs font-black text-foreground">综合热度排序</div>
-              <div className="text-[10px] text-foreground/55">Bangumi 在看 + B站热议{trendLoading ? ' · 更新中' : ''}</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex items-center gap-2 bg-card border border-border px-4 py-3 rounded-[1.5rem] text-sm font-black text-accent shadow-sm shadow-primary/10 transition-all hover:-translate-y-0.5 hover:bg-secondary hover:shadow-md hover:shadow-primary/15 active:scale-95"
+              aria-label={theme === 'dark' ? '切换到日间模式' : '切换到夜间模式'}
+            >
+              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+              <span className="hidden sm:inline">{theme === 'dark' ? '日间模式' : '夜间模式'}</span>
+            </button>
+
+            <div className="flex items-center gap-3 bg-card border border-border px-5 py-4 rounded-[1.5rem] shadow-sm shadow-primary/10 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/15">
+              <Flame size={18} className="text-accent" />
+              <div>
+                <div className="text-xs font-black text-foreground">综合热度排序</div>
+                <div className="text-[10px] text-foreground/55">Bangumi 在看 + B站热议{trendLoading ? ' · 更新中' : ''}</div>
+              </div>
             </div>
           </div>
         </header>

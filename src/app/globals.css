@@ -10,6 +10,26 @@
   --border: #f3d6e3;
 }
 
+:root[data-theme="light"] {
+  --background: #fff7fb;
+  --foreground: #4b3b47;
+  --primary: #f4a7c3;
+  --secondary: #fff0f6;
+  --accent: #e88fb2;
+  --card: #ffffff;
+  --border: #f3d6e3;
+}
+
+:root[data-theme="dark"] {
+  --background: #1a1619;
+  --foreground: #fce4ec;
+  --primary: #f4a7c3;
+  --secondary: #31252d;
+  --accent: #ff4081;
+  --card: #251c22;
+  --border: #4b3b47;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
