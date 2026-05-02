@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAnimeCalendar } from '../services/bangumi';
+import { GENRE_OPTIONS, enrichAnimeDetails, getAnimeCalendar } from '../services/bangumi';
 import { Anime, AnimeSummary } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { AnimeDetail } from '../components/AnimeDetail';
-import { Sparkles, TrendingUp, LayoutList, SortAsc, History } from 'lucide-react';
+import { Sparkles, TrendingUp, LayoutList, Tags, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -16,14 +16,69 @@ const LONG_RUNNING_KEYWORDS = [
   '面包超人', '龙珠', '死神', 'BLEACH'
 ];
 
+interface BilibiliTrend {
+  id: number;
+  bilibiliHeat: number;
+  bilibiliPlayTotal: number;
+  bilibiliVideoCount: number;
+  bilibiliKolCount: number;
+}
+
+type GenreOption = typeof GENRE_OPTIONS[number];
+
+const getCompositeHeat = (anime: Anime) => (anime.collection?.doing || 0) + (anime.bilibiliHeat || 0);
+
+const sortByCompositeHeat = (data: Anime[]) => {
+  return [...data].sort((a, b) => {
+    const heatDiff = getCompositeHeat(b) - getCompositeHeat(a);
+    if (heatDiff !== 0) return heatDiff;
+    return (b.rating?.score || 0) - (a.rating?.score || 0);
+  });
+};
+
 export default function Home() {
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [longRunningList, setLongRunningList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trendLoading, setTrendLoading] = useState(false);
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
-  const [sortBy, setSortBy] = useState<'heat' | 'rating'>('heat');
+  const [activeGenre, setActiveGenre] = useState<GenreOption>('全部');
 
   useEffect(() => {
+    const fetchSummaries = async (items: Anime[]) => {
+      try {
+        const response = await axios.post('/api/anime-summaries', { animeItems: items });
+        const { summaries } = response.data as { summaries: AnimeSummary[] };
+        
+        setAnimeList(prev => prev.map(anime => {
+          const found = summaries.find((s) => s.id === anime.id);
+          return found ? { ...anime, summary: found.summary } : anime;
+        }));
+      } catch (err) {
+        console.error('Failed to fetch summaries:', err);
+      }
+    };
+
+    const fetchBilibiliTrends = async (items: Anime[]) => {
+      setTrendLoading(true);
+      try {
+        const response = await axios.post('/api/bilibili-trends', { animeItems: items });
+        const { trends } = response.data as { trends: BilibiliTrend[] };
+        const trendById = new Map(trends.map((trend) => [trend.id, trend]));
+        const mergeTrend = (anime: Anime) => {
+          const trend = trendById.get(anime.id);
+          return trend ? { ...anime, ...trend } : anime;
+        };
+
+        setAnimeList((prev) => sortByCompositeHeat(prev.map(mergeTrend)));
+        setLongRunningList((prev) => sortByCompositeHeat(prev.map(mergeTrend)));
+      } catch (err) {
+        console.error('Failed to fetch Bilibili trends:', err);
+      } finally {
+        setTrendLoading(false);
+      }
+    };
+
     const fetchAndProcessData = async () => {
       try {
         const calendarData = await getAnimeCalendar();
@@ -45,14 +100,19 @@ export default function Home() {
           }
         });
 
-        const sortedSeasonal = sortData(seasonal, sortBy);
-        const sortedLongRunning = sortData(longRunning, sortBy);
+        const sortedSeasonal = sortByCompositeHeat(seasonal);
+        const sortedLongRunning = sortByCompositeHeat(longRunning);
+        const enriched = await enrichAnimeDetails([...sortedSeasonal, ...sortedLongRunning], 40);
+        const enrichedById = new Map(enriched.map((anime) => [anime.id, anime]));
+        const enrichedSeasonal = sortedSeasonal.map((anime) => enrichedById.get(anime.id) || anime);
+        const enrichedLongRunning = sortedLongRunning.map((anime) => enrichedById.get(anime.id) || anime);
         
-        setAnimeList(sortedSeasonal);
-        setLongRunningList(sortedLongRunning);
+        setAnimeList(sortByCompositeHeat(enrichedSeasonal));
+        setLongRunningList(sortByCompositeHeat(enrichedLongRunning));
 
         // 异步获取并更新摘要
-        fetchSummaries(sortedSeasonal.slice(0, 15));
+        fetchSummaries(enrichedSeasonal.slice(0, 15));
+        fetchBilibiliTrends(enriched.slice(0, 40));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -60,37 +120,24 @@ export default function Home() {
       }
     };
     fetchAndProcessData();
-  }, [sortBy]);
+  }, []);
 
-  const fetchSummaries = async (items: Anime[]) => {
-    try {
-      const response = await axios.post('/api/anime-summaries', { animeItems: items });
-      const { summaries } = response.data as { summaries: AnimeSummary[] };
-      
-      setAnimeList(prev => prev.map(anime => {
-        const found = summaries.find((s) => s.id === anime.id);
-        return found ? { ...anime, summary: found.summary } : anime;
-      }));
-    } catch (err) {
-      console.error('Failed to fetch summaries:', err);
-    }
-  };
-
-  const sortData = (data: Anime[], type: 'heat' | 'rating') => {
-    return [...data].sort((a, b) => {
-      if (type === 'heat') {
-        return (b.collection?.doing || 0) - (a.collection?.doing || 0);
-      } else {
-        return (b.rating?.score || 0) - (a.rating?.score || 0);
-      }
-    });
-  };
+  const allAnime = sortByCompositeHeat([...animeList, ...longRunningList]);
+  const genreCounts = GENRE_OPTIONS.reduce<Record<string, number>>((counts, genre) => {
+    counts[genre] = genre === '全部'
+      ? allAnime.length
+      : allAnime.filter((anime) => anime.genres?.includes(genre)).length;
+    return counts;
+  }, {});
+  const visibleAnime = activeGenre === '全部'
+    ? allAnime
+    : allAnime.filter((anime) => anime.genres?.includes(activeGenre));
 
   return (
     <main className="min-h-screen bg-[#fff7fb] text-[#4b3b47] pb-20">
       {/* PC Side Header (Sticky) */}
-      <div className="max-w-5xl mx-auto px-6 pt-12">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+      <div className="max-w-7xl mx-auto px-5 md:px-8 pt-8 md:pt-12">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div className="space-y-4">
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -105,33 +152,16 @@ export default function Home() {
               </h1>
             </motion.div>
             <p className="text-[#705463] max-w-md text-sm leading-relaxed">
-              聚合 Bangumi 与 Bilibili 公开线索，用 AI 追踪番剧口碑、热度与社区共识
+              聚合 Bangumi 题材标签与 Bilibili 热议线索，用 AI 追踪番剧口碑、热度与社区共识
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#fff0f6] p-1.5 rounded-2xl border border-[#f3d6e3]">
-            <button
-              onClick={() => setSortBy('heat')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                sortBy === 'heat' 
-                ? 'bg-white text-[#e88fb2] shadow-sm' 
-                : 'text-[#9a7b8a] hover:text-[#705463]'
-              }`}
-            >
-              <TrendingUp size={16} />
-              按热度
-            </button>
-            <button
-              onClick={() => setSortBy('rating')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                sortBy === 'rating' 
-                ? 'bg-white text-[#e88fb2] shadow-sm' 
-                : 'text-[#9a7b8a] hover:text-[#705463]'
-              }`}
-            >
-              <SortAsc size={16} />
-              按评分
-            </button>
+          <div className="flex items-center gap-3 bg-white border border-[#f3d6e3] px-5 py-4 rounded-[1.5rem] shadow-sm">
+            <Flame size={18} className="text-[#e88fb2]" />
+            <div>
+              <div className="text-xs font-black text-[#4b3b47]">综合热度排序</div>
+              <div className="text-[10px] text-[#9a7b8a]">Bangumi 在看 + B站热议{trendLoading ? ' · 更新中' : ''}</div>
+            </div>
           </div>
         </header>
 
@@ -143,22 +173,43 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="space-y-12">
-            {/* Seasonal Anime */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between text-xs font-semibold text-[#9a7b8a] uppercase tracking-widest px-4 mb-2">
+          <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-6 items-start">
+            <aside className="lg:sticky lg:top-8 bg-white border border-[#f3d6e3] rounded-[2rem] p-4 shadow-sm">
+              <div className="flex items-center gap-2 px-2 mb-4 text-xs font-black text-[#4b3b47] uppercase tracking-widest">
+                <Tags size={15} className="text-[#e88fb2]" />
+                题材分类
+              </div>
+              <div className="flex lg:flex-col gap-2 overflow-x-auto pb-1 lg:overflow-visible lg:pb-0">
+                {GENRE_OPTIONS.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => setActiveGenre(genre)}
+                    className={`flex-shrink-0 flex items-center justify-between gap-5 rounded-2xl px-4 py-3 text-sm font-bold transition-all ${
+                      activeGenre === genre
+                        ? 'bg-[#f4a7c3] text-white shadow-sm'
+                        : 'bg-[#fff7fb] text-[#705463] hover:bg-[#fff0f6]'
+                    }`}
+                  >
+                    <span>{genre}</span>
+                    <span className={`text-[10px] ${activeGenre === genre ? 'text-white/80' : 'text-[#c59aac]'}`}>{genreCounts[genre] || 0}</span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+
+            <section className="space-y-4 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 text-xs font-semibold text-[#9a7b8a] uppercase tracking-widest px-2 md:px-4 mb-2">
                 <div className="flex items-center gap-2">
                   <LayoutList size={14} className="text-[#e88fb2]" />
-                  当季热门番剧 ({animeList.length})
+                  {activeGenre}题材 ({visibleAnime.length})
                 </div>
-                <div className="flex items-center gap-4">
-                  <span>实时热度</span>
-                  <span>综合评分</span>
+                <div className="flex items-center gap-2 text-[10px] normal-case tracking-normal">
+                  <TrendingUp size={13} />
+                  前 40 部已补全题材与 B站热度
                 </div>
               </div>
-              
               <div className="grid grid-cols-1 gap-4">
-                {animeList.map((anime, index) => (
+                {visibleAnime.map((anime, index) => (
                   <AnimeCard 
                     key={anime.id} 
                     anime={anime} 
@@ -166,28 +217,13 @@ export default function Home() {
                     onClick={() => setSelectedAnime(anime)}
                   />
                 ))}
+                {visibleAnime.length === 0 && (
+                  <div className="rounded-[2rem] border border-dashed border-[#f3d6e3] bg-white p-10 text-center text-sm font-bold text-[#9a7b8a]">
+                    当前题材暂无已补全的番剧
+                  </div>
+                )}
               </div>
             </section>
-
-            {/* Long Running Classics */}
-            {longRunningList.length > 0 && (
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#9a7b8a] uppercase tracking-widest px-4 mb-2">
-                  <History size={14} className="text-[#f3d6e3]" />
-                  经典长篇连载 ({longRunningList.length})
-                </div>
-                <div className="grid grid-cols-1 gap-4 opacity-70 hover:opacity-100 transition-opacity">
-                  {longRunningList.map((anime, index) => (
-                    <AnimeCard 
-                      key={anime.id} 
-                      anime={anime} 
-                      index={animeList.length + index}
-                      onClick={() => setSelectedAnime(anime)}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
           </div>
         )}
       </div>

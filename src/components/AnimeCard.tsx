@@ -19,6 +19,9 @@ export const AnimeCard = ({ anime, onClick, index }: AnimeCardProps) => {
     anime.images?.small ||
     anime.images?.grid ||
     '/window.svg';
+  const playText = anime.bilibiliPlayTotal && anime.bilibiliPlayTotal >= 10000
+    ? `${(anime.bilibiliPlayTotal / 10000).toFixed(1)}万`
+    : anime.bilibiliPlayTotal || 0;
 
   return (
     <motion.div
@@ -59,12 +62,21 @@ export const AnimeCard = ({ anime, onClick, index }: AnimeCardProps) => {
             </span>
           )}
         </div>
+        {anime.genres && anime.genres.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {anime.genres.slice(0, 3).map((genre) => (
+              <span key={genre} className="bg-[#fff0f6] text-[#d9789f] text-[10px] font-black px-2 py-0.5 rounded-full">
+                {genre}
+              </span>
+            ))}
+          </div>
+        )}
         
         <p className={`text-[#705463] text-sm line-clamp-1 mb-3 ${!anime.summary || anime.summary === '暂无简介' ? 'animate-pulse bg-[#fff0f6] rounded-full h-4 w-3/4' : ''}`}>
           {(!anime.summary || anime.summary === '暂无简介') ? '' : anime.summary}
         </p>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <div className="flex items-center gap-1.5 text-[#9a7b8a] text-sm">
             <Star size={14} className="text-[#e88fb2] fill-[#e88fb2]" />
             <span className="font-bold text-[#4b3b47]">{anime.rating?.score || 'N/A'}</span>
@@ -79,6 +91,13 @@ export const AnimeCard = ({ anime, onClick, index }: AnimeCardProps) => {
             <Calendar size={14} />
             <span className="text-[10px]">{anime.air_date || '待定'}</span>
           </div>
+          {(anime.bilibiliHeat || 0) > 0 && (
+            <div className="flex items-center gap-1.5 text-[#9a7b8a] text-sm">
+              <Play size={14} className="text-[#ff6f9f]" />
+              <span className="font-bold text-[#4b3b47]">{playText}</span>
+              <span className="text-[10px] opacity-60">B站热议</span>
+            </div>
+          )}
         </div>
       </div>
 

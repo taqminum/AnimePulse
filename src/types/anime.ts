@@ -20,6 +20,19 @@ export interface Anime {
   } | null;
   air_date?: string;
   eps?: number;
+  meta_tags?: string[];
+  tags?: AnimeTag[];
+  genres?: string[];
+  bilibiliHeat?: number;
+  bilibiliPlayTotal?: number;
+  bilibiliVideoCount?: number;
+  bilibiliKolCount?: number;
+}
+
+export interface AnimeTag {
+  name: string;
+  count: number;
+  total_cont?: number;
 }
 
 export interface CalendarDay {

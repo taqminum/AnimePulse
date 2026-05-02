@@ -2,7 +2,7 @@
 
 import { Anime } from '../types/anime';
 import { AnimeInsight, BilibiliReference } from '../types/anime';
-import { Star, Play, X, TrendingUp, Award, Users, Copy, Check, Sparkles } from 'lucide-react';
+import { Star, Play, ArrowLeft, TrendingUp, Award, Users, Copy, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MouseEvent, useEffect, useState } from 'react';
 import axios from 'axios';
@@ -90,52 +90,64 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
+        <div className="fixed inset-0 z-50 overflow-hidden">
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 0.75 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-[#ff80ab]/25 backdrop-blur-md"
+            className="absolute inset-0 bg-[#2a1420]/30 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row border-4 border-[#f8bbd0]"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+            className="absolute inset-y-0 right-0 w-full md:w-[calc(100vw-56px)] xl:w-[1180px] bg-white overflow-y-auto shadow-2xl border-l border-[#f8bbd0]"
           >
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 p-2 bg-[#fce4ec] text-[#ff4081] hover:bg-[#ff80ab] hover:text-white rounded-full z-10 transition-all shadow-sm"
+              className="sticky top-5 left-5 ml-5 mt-5 z-20 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-[#ff4081] shadow-lg ring-1 ring-[#f8bbd0] backdrop-blur transition-all hover:bg-[#ff80ab] hover:text-white"
             >
-              <X size={20} />
+              <ArrowLeft size={18} />
+              返回列表
             </button>
 
-            {/* Left: Info */}
-            <div className="md:w-1/3 h-64 md:h-auto relative border-r border-[#fce4ec]">
+            {/* Hero: Info */}
+            <div className="relative min-h-[460px] md:min-h-[560px] border-b border-[#fce4ec]">
               <Image
                 src={coverSrc}
                 alt={anime.name_cn || anime.name}
                 fill
-                sizes="(max-width: 768px) 100vw, 33vw"
+                sizes="100vw"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1a0610]/90 via-transparent to-transparent flex flex-col justify-end p-8">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="bg-[#ff4081] text-white text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Bangumi</span>
-                </div>
-                <h2 className="text-2xl font-black text-white mb-2 leading-tight">{anime.name_cn || anime.name}</h2>
-                <div className="flex gap-4 text-white/90 text-sm font-bold">
-                  <span className="flex items-center gap-1.5"><Star size={16} className="text-[#ffeb3b] fill-[#ffeb3b]" /> {anime.rating?.score || 'N/A'}</span>
-                  <span className="flex items-center gap-1.5"><Users size={16} /> {anime.rating?.total || 0}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1a0610]/95 via-[#1a0610]/60 to-[#1a0610]/20" />
+              <div className="absolute inset-x-0 bottom-0 p-7 md:p-14">
+                <div className="max-w-4xl">
+                  <div className="flex flex-wrap items-center gap-2 mb-5">
+                    <span className="bg-[#ff4081] text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">Bangumi</span>
+                    {anime.genres?.slice(0, 4).map((genre) => (
+                      <span key={genre} className="bg-white/15 text-white text-[10px] px-3 py-1 rounded-full font-black backdrop-blur">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                  <h2 className="text-4xl md:text-6xl font-black text-white mb-5 leading-tight max-w-3xl">{anime.name_cn || anime.name}</h2>
+                  <div className="flex flex-wrap gap-4 text-white/90 text-sm md:text-base font-bold">
+                    <span className="flex items-center gap-1.5"><Star size={18} className="text-[#ffeb3b] fill-[#ffeb3b]" /> {anime.rating?.score || 'N/A'} 分</span>
+                    <span className="flex items-center gap-1.5"><Users size={18} /> {anime.rating?.total || 0} 人评分</span>
+                    <span className="flex items-center gap-1.5"><TrendingUp size={18} /> {anime.collection?.doing || 0} 正在看</span>
+                    {(anime.bilibiliHeat || 0) > 0 && <span className="flex items-center gap-1.5"><Play size={18} /> B站热度 {anime.bilibiliHeat}</span>}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right: Insight */}
-            <div className="md:w-2/3 p-8 md:p-10 overflow-y-auto bg-white">
+            {/* Insight */}
+            <div className="p-6 md:p-12 bg-white">
               {loading ? (
-                <div className="h-full flex flex-col items-center justify-center gap-6 py-12">
+                <div className="min-h-[360px] flex flex-col items-center justify-center gap-6 py-12">
                   <div className="w-16 h-16 border-4 border-[#fce4ec] border-t-[#ff4081] rounded-full animate-spin" />
                   <p className="text-[#f06292] animate-pulse font-black text-lg">AI 正在全力加载中...</p>
                 </div>
