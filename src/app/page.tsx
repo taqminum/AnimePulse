@@ -134,7 +134,7 @@ export default function Home() {
     : allAnime.filter((anime) => anime.genres?.includes(activeGenre));
 
   return (
-    <main className="min-h-screen bg-[#fff7fb] text-[#4b3b47] pb-20">
+    <main className="min-h-screen bg-background text-foreground pb-20">
       {/* PC Side Header (Sticky) */}
       <div className="max-w-7xl mx-auto px-5 md:px-8 pt-8 md:pt-12">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
@@ -144,23 +144,23 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-[#f4a7c3] rounded-2xl flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-sm shadow-primary/20">
                 <Sparkles className="text-white" size={24} />
               </div>
               <h1 className="text-3xl font-black tracking-tight">
-                Anime<span className="text-[#e88fb2]">Pulse</span>
+                Anime<span className="text-accent">Pulse</span>
               </h1>
             </motion.div>
-            <p className="text-[#705463] max-w-md text-sm leading-relaxed">
+            <p className="text-foreground/70 max-w-md text-sm leading-relaxed">
               聚合 Bangumi 题材标签与 Bilibili 热议线索，用 AI 追踪番剧口碑、热度与社区共识
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white border border-[#f3d6e3] px-5 py-4 rounded-[1.5rem] shadow-sm">
-            <Flame size={18} className="text-[#e88fb2]" />
+          <div className="flex items-center gap-3 bg-card border border-border px-5 py-4 rounded-[1.5rem] shadow-sm shadow-primary/10 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/15">
+            <Flame size={18} className="text-accent" />
             <div>
-              <div className="text-xs font-black text-[#4b3b47]">综合热度排序</div>
-              <div className="text-[10px] text-[#9a7b8a]">Bangumi 在看 + B站热议{trendLoading ? ' · 更新中' : ''}</div>
+              <div className="text-xs font-black text-foreground">综合热度排序</div>
+              <div className="text-[10px] text-foreground/55">Bangumi 在看 + B站热议{trendLoading ? ' · 更新中' : ''}</div>
             </div>
           </div>
         </header>
@@ -169,38 +169,38 @@ export default function Home() {
         {loading ? (
           <div className="space-y-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-32 w-full bg-[#fff0f6] animate-pulse rounded-3xl" />
+              <div key={i} className="h-32 w-full bg-secondary animate-pulse rounded-3xl" />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-6 items-start">
-            <aside className="lg:sticky lg:top-8 bg-white border border-[#f3d6e3] rounded-[2rem] p-4 shadow-sm">
-              <div className="flex items-center gap-2 px-2 mb-4 text-xs font-black text-[#4b3b47] uppercase tracking-widest">
-                <Tags size={15} className="text-[#e88fb2]" />
+            <aside className="lg:sticky lg:top-8 bg-card border border-border rounded-[2rem] p-4 shadow-sm shadow-primary/10">
+              <div className="flex items-center gap-2 px-2 mb-4 text-xs font-black text-foreground uppercase tracking-widest">
+                <Tags size={15} className="text-accent" />
                 题材分类
               </div>
-              <div className="flex lg:flex-col gap-2 overflow-x-auto pb-1 lg:overflow-visible lg:pb-0">
+              <div className="scrollbar-hide flex lg:flex-col gap-2 overflow-x-auto pb-1 lg:overflow-visible lg:pb-0">
                 {GENRE_OPTIONS.map((genre) => (
                   <button
                     key={genre}
                     onClick={() => setActiveGenre(genre)}
-                    className={`flex-shrink-0 flex items-center justify-between gap-5 rounded-2xl px-4 py-3 text-sm font-bold transition-all ${
+                    className={`flex-shrink-0 flex items-center justify-between gap-5 rounded-2xl px-4 py-3 text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] ${
                       activeGenre === genre
-                        ? 'bg-[#f4a7c3] text-white shadow-sm'
-                        : 'bg-[#fff7fb] text-[#705463] hover:bg-[#fff0f6]'
+                        ? 'bg-primary text-white shadow-sm shadow-primary/25'
+                        : 'bg-secondary text-foreground/70 hover:bg-primary/15 hover:text-foreground'
                     }`}
                   >
                     <span>{genre}</span>
-                    <span className={`text-[10px] ${activeGenre === genre ? 'text-white/80' : 'text-[#c59aac]'}`}>{genreCounts[genre] || 0}</span>
+                    <span className={`text-[10px] ${activeGenre === genre ? 'text-white/80' : 'text-foreground/45'}`}>{genreCounts[genre] || 0}</span>
                   </button>
                 ))}
               </div>
             </aside>
 
             <section className="space-y-4 min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 text-xs font-semibold text-[#9a7b8a] uppercase tracking-widest px-2 md:px-4 mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 text-xs font-semibold text-foreground/55 uppercase tracking-widest px-2 md:px-4 mb-2">
                 <div className="flex items-center gap-2">
-                  <LayoutList size={14} className="text-[#e88fb2]" />
+                  <LayoutList size={14} className="text-accent" />
                   {activeGenre}题材 ({visibleAnime.length})
                 </div>
                 <div className="flex items-center gap-2 text-[10px] normal-case tracking-normal">
@@ -218,7 +218,7 @@ export default function Home() {
                   />
                 ))}
                 {visibleAnime.length === 0 && (
-                  <div className="rounded-[2rem] border border-dashed border-[#f3d6e3] bg-white p-10 text-center text-sm font-bold text-[#9a7b8a]">
+                  <div className="rounded-[2rem] border border-dashed border-border bg-card p-10 text-center text-sm font-bold text-foreground/55">
                     当前题材暂无已补全的番剧
                   </div>
                 )}

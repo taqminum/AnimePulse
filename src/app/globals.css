@@ -22,13 +22,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #fff5f8;
-    --foreground: #4a148c;
-    --primary: #ff80ab;
-    --secondary: #fce4ec;
+    --background: #1a1619;
+    --foreground: #fce4ec;
+    --primary: #f4a7c3;
+    --secondary: #31252d;
     --accent: #ff4081;
-    --card: #ffffff;
-    --border: #f8bbd0;
+    --card: #251c22;
+    --border: #4b3b47;
   }
 }
 
@@ -50,4 +50,13 @@ body {
 .hover-cute:hover {
   transform: scale(1.02);
   box-shadow: 0 20px 30px -10px rgba(255, 128, 171, 0.3);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
