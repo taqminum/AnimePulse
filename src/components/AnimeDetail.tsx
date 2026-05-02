@@ -69,6 +69,9 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
     anime.images?.small ||
     anime.images?.grid ||
     '/window.svg';
+  const playText = anime.bilibiliPlayTotal && anime.bilibiliPlayTotal >= 10000
+    ? `${(anime.bilibiliPlayTotal / 10000).toFixed(1)}万`
+    : anime.bilibiliPlayTotal || 0;
 
   useEffect(() => {
     if (isOpen && !insight) {
@@ -93,59 +96,104 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
         <div className="fixed inset-0 z-50 overflow-hidden">
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.75 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-[#2a1420]/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#4b3b47]/10 backdrop-blur-[2px]"
           />
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
-            className="absolute inset-y-0 right-0 w-full md:w-[calc(100vw-56px)] xl:w-[1180px] bg-white overflow-y-auto shadow-2xl border-l border-[#f8bbd0]"
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 sm:inset-y-3 sm:right-3 sm:left-auto w-full sm:w-[92vw] lg:w-[860px] xl:w-[960px] bg-[#fff7fb] overflow-hidden shadow-2xl border border-[#f3d6e3] sm:rounded-[2.5rem]"
           >
-            <button
-              onClick={onClose}
-              className="sticky top-5 left-5 ml-5 mt-5 z-20 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-[#ff4081] shadow-lg ring-1 ring-[#f8bbd0] backdrop-blur transition-all hover:bg-[#ff80ab] hover:text-white"
-            >
-              <ArrowLeft size={18} />
-              返回列表
-            </button>
-
-            {/* Hero: Info */}
-            <div className="relative min-h-[460px] md:min-h-[560px] border-b border-[#fce4ec]">
-              <Image
-                src={coverSrc}
-                alt={anime.name_cn || anime.name}
-                fill
-                sizes="100vw"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1a0610]/95 via-[#1a0610]/60 to-[#1a0610]/20" />
-              <div className="absolute inset-x-0 bottom-0 p-7 md:p-14">
-                <div className="max-w-4xl">
-                  <div className="flex flex-wrap items-center gap-2 mb-5">
-                    <span className="bg-[#ff4081] text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">Bangumi</span>
-                    {anime.genres?.slice(0, 4).map((genre) => (
-                      <span key={genre} className="bg-white/15 text-white text-[10px] px-3 py-1 rounded-full font-black backdrop-blur">
-                        {genre}
-                      </span>
-                    ))}
-                  </div>
-                  <h2 className="text-4xl md:text-6xl font-black text-white mb-5 leading-tight max-w-3xl">{anime.name_cn || anime.name}</h2>
-                  <div className="flex flex-wrap gap-4 text-white/90 text-sm md:text-base font-bold">
-                    <span className="flex items-center gap-1.5"><Star size={18} className="text-[#ffeb3b] fill-[#ffeb3b]" /> {anime.rating?.score || 'N/A'} 分</span>
-                    <span className="flex items-center gap-1.5"><Users size={18} /> {anime.rating?.total || 0} 人评分</span>
-                    <span className="flex items-center gap-1.5"><TrendingUp size={18} /> {anime.collection?.doing || 0} 正在看</span>
-                    {(anime.bilibiliHeat || 0) > 0 && <span className="flex items-center gap-1.5"><Play size={18} /> B站热度 {anime.bilibiliHeat}</span>}
-                  </div>
-                </div>
+            <div className="h-full overflow-y-auto">
+              <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-[#f3d6e3] bg-[#fff7fb]/90 px-5 py-4 backdrop-blur md:px-7">
+                <button
+                  onClick={onClose}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#e88fb2] shadow-sm ring-1 ring-[#f3d6e3] transition-all hover:bg-[#f4a7c3] hover:text-white"
+                >
+                  <ArrowLeft size={18} />
+                  返回列表
+                </button>
+                <span className="rounded-full bg-[#fff0f6] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#d9789f] ring-1 ring-[#f3d6e3]">
+                  Anime Detail
+                </span>
               </div>
-            </div>
 
-            {/* Insight */}
-            <div className="p-6 md:p-12 bg-white">
+              <div className="p-5 md:p-7">
+                <section className="relative overflow-hidden rounded-[2rem] border border-[#f3d6e3] bg-white p-5 shadow-sm md:p-7">
+                  <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#fff0f6]" />
+                  <div className="relative flex flex-col gap-5 sm:flex-row">
+                    <div className="relative mx-auto h-56 w-40 flex-shrink-0 overflow-hidden rounded-[1.5rem] border border-[#f3d6e3] shadow-md sm:mx-0 sm:h-64 sm:w-44">
+                      <Image
+                        src={coverSrc}
+                        alt={anime.name_cn || anime.name}
+                        fill
+                        sizes="176px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col justify-center">
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-[#f4a7c3] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white">Bangumi</span>
+                        {anime.genres?.slice(0, 4).map((genre) => (
+                          <span key={genre} className="rounded-full bg-[#fff0f6] px-3 py-1 text-[10px] font-black text-[#d9789f] ring-1 ring-[#f3d6e3]">
+                            {genre}
+                          </span>
+                        ))}
+                      </div>
+                      <h2 className="mb-3 text-3xl font-black leading-tight text-[#4b3b47] md:text-5xl">{anime.name_cn || anime.name}</h2>
+                      {anime.name_cn && anime.name_cn !== anime.name && (
+                        <p className="mb-5 text-sm font-bold text-[#9a7b8a]">{anime.name}</p>
+                      )}
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                        <div className="rounded-2xl bg-[#fff7fb] p-3 ring-1 ring-[#f3d6e3]">
+                          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-black text-[#d9789f]"><Star size={13} />评分</div>
+                          <div className="text-xl font-black text-[#4b3b47]">{anime.rating?.score || 'N/A'}</div>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] p-3 ring-1 ring-[#f3d6e3]">
+                          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-black text-[#d9789f]"><Users size={13} />评分人数</div>
+                          <div className="text-xl font-black text-[#4b3b47]">{anime.rating?.total || 0}</div>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] p-3 ring-1 ring-[#f3d6e3]">
+                          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-black text-[#d9789f]"><TrendingUp size={13} />正在看</div>
+                          <div className="text-xl font-black text-[#4b3b47]">{anime.collection?.doing || 0}</div>
+                        </div>
+                        <div className="rounded-2xl bg-[#fff7fb] p-3 ring-1 ring-[#f3d6e3]">
+                          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-black text-[#d9789f]"><Play size={13} />B站热议</div>
+                          <div className="text-xl font-black text-[#4b3b47]">{playText}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
+                  <aside className="space-y-4">
+                    <section className="rounded-[2rem] border border-[#f3d6e3] bg-white p-5 shadow-sm">
+                      <div className="mb-4 text-xs font-black uppercase tracking-widest text-[#d9789f]">基础信息</div>
+                      <div className="space-y-3 text-sm font-bold text-[#705463]">
+                        <div className="flex items-center justify-between gap-3"><span>放送日期</span><span className="text-[#4b3b47]">{anime.air_date || '待定'}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>话数</span><span className="text-[#4b3b47]">{anime.eps || '未知'}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>B站视频</span><span className="text-[#4b3b47]">{anime.bilibiliVideoCount || 0}</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>头部UP</span><span className="text-[#4b3b47]">{anime.bilibiliKolCount || 0}</span></div>
+                      </div>
+                    </section>
+                    <section className="rounded-[2rem] border border-[#f3d6e3] bg-white p-5 shadow-sm">
+                      <div className="mb-4 text-xs font-black uppercase tracking-widest text-[#d9789f]">题材标签</div>
+                      <div className="flex flex-wrap gap-2">
+                        {(anime.genres && anime.genres.length > 0 ? anime.genres : ['其他']).map((genre) => (
+                          <span key={genre} className="rounded-full bg-[#fff0f6] px-3 py-1 text-[10px] font-black text-[#d9789f] ring-1 ring-[#f3d6e3]">
+                            {genre}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  </aside>
+
+                  <div className="min-w-0">
               {loading ? (
                 <div className="min-h-[360px] flex flex-col items-center justify-center gap-6 py-12">
                   <div className="w-16 h-16 border-4 border-[#fce4ec] border-t-[#ff4081] rounded-full animate-spin" />
@@ -249,6 +297,9 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
               ) : (
                 <div className="py-12 text-center text-zinc-500">无法获取舆论分析，请稍后再试。</div>
               )}
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
