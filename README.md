@@ -1,74 +1,29 @@
-# AnimePulse（AI 番剧舆情与热度洞察）
+# AnimePulse
 
-AnimePulse 是一个 AI 番剧舆情与热度洞察工具，聚合 Bangumi 与 Bilibili 公开线索，通过 DeepSeek 生成摘要、趋势、共识与参考来源。
+AnimePulse 是一个面向新番追踪的番剧热度与舆情洞察工具，聚合 Bangumi 番剧资料与 Bilibili 社区讨论线索，帮助用户快速了解当季番剧的题材分布、热度排名、评分表现和社区反馈。
 
-## 本地运行
+## 项目介绍
 
-```bash
-npm i
-npm run dev
-```
+项目围绕“当季番剧发现”和“社区热度洞察”展开，提供题材分类、综合热度排序、番剧详情分析和 AI 舆情总结等能力。
 
-浏览器打开 `http://localhost:3000`。
+核心功能包括：
 
-## AI 配置
+- 基于 Bangumi 数据展示当季番剧列表、评分、在看人数和基础信息
+- 根据番剧标签进行题材分类，例如奇幻、恋爱、战斗、日常、异世界等
+- 引入 Bilibili 播放量与相关视频数据，辅助判断番剧在社区中的讨论热度
+- 使用 AI 汇总番剧相关讨论，生成口碑共识、趋势判断和参考来源
+- 提供沉浸式番剧详情页，用于查看评分、热度、题材和 AI 洞察内容
 
-本项目默认支持“演示模式”：不配置 Key 也能跑通完整交互（会返回 Mock/截断结果）。
+## 技术栈
 
-如需开启真实 AI 调用，在项目根目录创建 `.env.local`。不要把 `.env.local` 或真实 Key 提交到 Git：
-
-```txt
-AI_API_KEY=你的 DeepSeek Key
-AI_BASE_URL=https://api.deepseek.com/v1
-AI_MODEL=deepseek-v4-flash
-```
-
-项目仍兼容旧的 `OPENAI_API_KEY` / `OPENAI_BASE_URL`，但新部署建议使用 `AI_*` 变量。
-
-## 上线与评审
-
-- 推荐部署到 Vercel，并在环境变量中配置 `AI_API_KEY`
-- 部署后可访问 `GET /api/ai-health?probe=1` 验证生产环境是否能正常调用 DeepSeek 兼容接口
-
-## 质量检查
-
-```bash
-npm run lint
-npm run test
-npm run typecheck
-npm run build
-```
-
-或一次性运行：
-
-```bash
-npm run check
-```
-
-仓库内置 GitHub Actions CI，会在 `main` 分支 push 和 pull request 时自动执行同样的质量检查。
-
-项目对摘要和洞察接口做了服务端内存缓存与简单限流，用于降低第三方接口抖动和 AI 调用成本。生产环境多实例部署时，如需跨实例共享缓存，建议接入 Redis/Upstash 等外部缓存。
-
-## Redis 缓存（可选）
-
-生产环境建议使用 Upstash Redis。配置后，摘要缓存、洞察缓存、Bilibili 搜索缓存和接口限流会跨实例共享；未配置时自动降级为单实例内存模式。
-
-```txt
-UPSTASH_REDIS_REST_URL=你的 Upstash REST URL
-UPSTASH_REDIS_REST_TOKEN=你的 Upstash REST Token
-```
-
-## 运维指标（可选）
-
-设置 `METRICS_TOKEN` 后，可以通过受保护接口查看进程内运行指标：
-
-```bash
-curl -H "Authorization: Bearer $METRICS_TOKEN" http://localhost:3000/api/metrics
-```
-
-如果未设置 `METRICS_TOKEN`，`/api/metrics` 会返回 404，避免公开暴露运维信息。
-
-## 文档
-
-- [PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md)
-- [PROJECT_SPEC.md](docs/PROJECT_SPEC.md)
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Framer Motion
+- Axios
+- Vitest
+- ESLint
+- Bangumi API
+- Bilibili Web API
+- DeepSeek / OpenAI Compatible API
