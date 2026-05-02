@@ -5,7 +5,7 @@ import { GENRE_OPTIONS, enrichAnimeDetails, getAnimeCalendar } from '../services
 import { Anime, AnimeSummary } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { AnimeDetail } from '../components/AnimeDetail';
-import { Sparkles, TrendingUp, LayoutList, Tags, Flame, Moon, Sun } from 'lucide-react';
+import { Sparkles, TrendingUp, LayoutList, Tags, Flame, Moon, Sun, Trophy, PlayCircle, Star, Gem } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -26,8 +26,23 @@ interface BilibiliTrend {
 
 type GenreOption = typeof GENRE_OPTIONS[number];
 type ThemeMode = 'light' | 'dark';
+type TrendBoardKey = 'composite' | 'bilibili' | 'rating' | 'underrated';
+
+interface TrendBoard {
+  key: TrendBoardKey;
+  title: string;
+  description: string;
+  items: Anime[];
+  metricLabel: (anime: Anime) => string;
+}
 
 const getCompositeHeat = (anime: Anime) => (anime.collection?.doing || 0) + (anime.bilibiliHeat || 0);
+const getBilibiliScore = (anime: Anime) => (anime.bilibiliHeat || 0) || (anime.bilibiliPlayTotal || 0);
+
+const formatCompactNumber = (value: number) => {
+  if (value >= 10000) return `${(value / 10000).toFixed(1)}万`;
+  return String(Math.round(value));
+};
 
 const sortByCompositeHeat = (data: Anime[]) => {
   return [...data].sort((a, b) => {
@@ -35,6 +50,69 @@ const sortByCompositeHeat = (data: Anime[]) => {
     if (heatDiff !== 0) return heatDiff;
     return (b.rating?.score || 0) - (a.rating?.score || 0);
   });
+};
+
+const getTrendBoards = (data: Anime[]): TrendBoard[] => {
+  const ratedItems = data.filter((anime) => (anime.rating?.score || 0) > 0);
+  const reliableRatedItems = ratedItems.filter((anime) => (anime.rating?.total || 0) >= 30);
+  const underratedItems = reliableRatedItems
+    .filter((anime) => (anime.rating?.score || 0) >= 7)
+    .sort((a, b) => {
+      const scoreDiff = (b.rating?.score || 0) - (a.rating?.score || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return getCompositeHeat(a) - getCompositeHeat(b);
+    });
+
+  return [
+    {
+      key: 'composite',
+      title: '综合热度榜',
+      description: 'Bangumi 在看 + B站热议',
+      items: sortByCompositeHeat(data).slice(0, 5),
+      metricLabel: (anime) => `${formatCompactNumber(getCompositeHeat(anime))} 热度`,
+    },
+    {
+      key: 'bilibili',
+      title: 'B站热议榜',
+      description: '社区播放线索与头部UP权重',
+      items: [...data]
+        .filter((anime) => getBilibiliScore(anime) > 0)
+        .sort((a, b) => {
+          const scoreDiff = getBilibiliScore(b) - getBilibiliScore(a);
+          if (scoreDiff !== 0) return scoreDiff;
+          return (b.bilibiliPlayTotal || 0) - (a.bilibiliPlayTotal || 0);
+        })
+        .slice(0, 5),
+      metricLabel: (anime) => `${formatCompactNumber(anime.bilibiliPlayTotal || anime.bilibiliHeat || 0)} 播放`,
+    },
+    {
+      key: 'rating',
+      title: '高分口碑榜',
+      description: '过滤低样本后的评分排序',
+      items: [...reliableRatedItems]
+        .sort((a, b) => {
+          const scoreDiff = (b.rating?.score || 0) - (a.rating?.score || 0);
+          if (scoreDiff !== 0) return scoreDiff;
+          return (b.rating?.total || 0) - (a.rating?.total || 0);
+        })
+        .slice(0, 5),
+      metricLabel: (anime) => `${anime.rating?.score || 'N/A'} 分`,
+    },
+    {
+      key: 'underrated',
+      title: '冷门佳作榜',
+      description: '高评分但相对低热度',
+      items: underratedItems.slice(0, 5),
+      metricLabel: (anime) => `${anime.rating?.score || 'N/A'} 分 · ${formatCompactNumber(getCompositeHeat(anime))} 热度`,
+    },
+  ];
+};
+
+const TREND_BOARD_ICONS: Record<TrendBoardKey, typeof Trophy> = {
+  composite: Trophy,
+  bilibili: PlayCircle,
+  rating: Star,
+  underrated: Gem,
 };
 
 export default function Home() {
@@ -144,6 +222,7 @@ export default function Home() {
   const visibleAnime = activeGenre === '全部'
     ? allAnime
     : allAnime.filter((anime) => anime.genres?.includes(activeGenre));
+  const trendBoards = getTrendBoards(animeList);
 
   return (
     <main className="min-h-screen bg-background text-foreground pb-20">
@@ -222,6 +301,89 @@ export default function Home() {
             </aside>
 
             <section className="space-y-4 min-w-0">
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-2 md:px-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-black text-accent uppercase tracking-widest">
+                      <Trophy size={15} />
+                      番剧趋势榜
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-foreground/55">
+                      从热度、社区讨论、评分口碑和冷门潜力快速发现本季重点番剧
+                    </p>
+                  </div>
+                  {trendLoading && (
+                    <span className="self-start sm:self-auto rounded-full bg-secondary px-3 py-1 text-[10px] font-black text-accent ring-1 ring-border">
+                      B站热度更新中
+                    </span>
+                  )}
+                </div>
+
+                <div className="scrollbar-hide grid grid-flow-col auto-cols-[88%] gap-4 overflow-x-auto pb-2 sm:auto-cols-[minmax(280px,1fr)] lg:grid-flow-row lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+                  {trendBoards.map((board) => {
+                    const Icon = TREND_BOARD_ICONS[board.key];
+                    const topAnime = board.items[0];
+
+                    return (
+                      <motion.div
+                        key={board.key}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative overflow-hidden rounded-[2rem] border border-border bg-card p-5 shadow-sm shadow-primary/10"
+                      >
+                        <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-secondary" />
+                        <div className="relative mb-4 flex items-start justify-between gap-3">
+                          <div>
+                            <div className="mb-1 flex items-center gap-2 text-sm font-black text-foreground">
+                              <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary text-white shadow-sm shadow-primary/20">
+                                <Icon size={17} />
+                              </span>
+                              {board.title}
+                            </div>
+                            <p className="text-[11px] font-bold text-foreground/55">{board.description}</p>
+                          </div>
+                          <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black text-accent ring-1 ring-border">
+                            TOP 5
+                          </span>
+                        </div>
+
+                        {topAnime ? (
+                          <div className="relative space-y-2">
+                            {board.items.map((anime, index) => (
+                              <button
+                                key={anime.id}
+                                type="button"
+                                onClick={() => setSelectedAnime(anime)}
+                                className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 active:scale-[0.99] ${
+                                  index === 0 ? 'bg-primary text-white shadow-sm shadow-primary/25' : 'bg-secondary text-foreground hover:bg-primary/15'
+                                }`}
+                              >
+                                <span className={`w-7 flex-shrink-0 text-center text-sm font-black ${index === 0 ? 'text-white' : 'text-accent'}`}>
+                                  {String(index + 1).padStart(2, '0')}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-sm font-black">{anime.name_cn || anime.name}</span>
+                                  <span className={`block truncate text-[10px] font-bold ${index === 0 ? 'text-white/75' : 'text-foreground/50'}`}>
+                                    {anime.genres?.slice(0, 2).join(' / ') || '其他'}
+                                  </span>
+                                </span>
+                                <span className={`flex-shrink-0 text-[10px] font-black ${index === 0 ? 'text-white/90' : 'text-accent'}`}>
+                                  {board.metricLabel(anime)}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="relative rounded-2xl border border-dashed border-border bg-secondary p-6 text-center text-xs font-bold text-foreground/55">
+                            暂无足够数据
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 text-xs font-semibold text-foreground/55 uppercase tracking-widest px-2 md:px-4 mb-2">
                 <div className="flex items-center gap-2">
                   <LayoutList size={14} className="text-accent" />
