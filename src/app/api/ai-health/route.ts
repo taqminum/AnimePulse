@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { createAiClient } from '@/lib/ai';
 
 export const runtime = 'nodejs';
 
@@ -7,42 +7,46 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const probe = url.searchParams.get('probe') === '1';
 
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-  const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-  const configured = !!openaiApiKey && openaiApiKey !== 'your-api-key';
+  const { client, config } = createAiClient();
 
   if (!probe) {
-    return NextResponse.json({ configured, baseURL });
+    return NextResponse.json({ configured: config.configured, baseURL: config.baseURL, model: config.model });
   }
 
-  if (!configured) {
-    return NextResponse.json({ configured, baseURL, ok: false, reason: 'OPENAI_API_KEY not set' });
+  if (!config.configured || !client) {
+    return NextResponse.json({
+      configured: config.configured,
+      baseURL: config.baseURL,
+      model: config.model,
+      ok: false,
+      reason: 'AI_API_KEY not set',
+    });
   }
 
   const startedAt = Date.now();
 
   try {
-    const openai = new OpenAI({ apiKey: openaiApiKey, baseURL });
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await client.chat.completions.create({
+      model: config.model,
       messages: [{ role: 'user', content: 'ping' }],
       max_tokens: 1,
     });
 
     return NextResponse.json({
-      configured,
-      baseURL,
+      configured: config.configured,
+      baseURL: config.baseURL,
       ok: true,
       model: completion.model,
       latencyMs: Date.now() - startedAt,
     });
   } catch {
     return NextResponse.json({
-      configured,
-      baseURL,
+      configured: config.configured,
+      baseURL: config.baseURL,
+      model: config.model,
       ok: false,
       latencyMs: Date.now() - startedAt,
-      error: 'OpenAI request failed',
+      error: 'AI request failed',
     });
   }
 }

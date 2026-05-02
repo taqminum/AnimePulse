@@ -1,10 +1,12 @@
 'use client';
 
 import { Anime } from '../types/anime';
-import { Star, MessageCircle, Play, X, TrendingUp, Award, Users, Info, Copy, Check, Sparkles } from 'lucide-react';
+import { AnimeInsight, BilibiliReference } from '../types/anime';
+import { Star, Play, X, TrendingUp, Award, Users, Copy, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { MouseEvent, useEffect, useState } from 'react';
 import axios from 'axios';
+import Image from 'next/image';
 
 interface AnimeDetailProps {
   anime: Anime;
@@ -12,10 +14,13 @@ interface AnimeDetailProps {
   onClose: () => void;
 }
 
-const ReferenceItem = ({ refData }: { refData: any }) => {
+const ReferenceItem = ({ refData }: { refData: BilibiliReference }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
+  const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     try {
       await navigator.clipboard.writeText(refData.url);
       setCopied(true);
@@ -26,26 +31,35 @@ const ReferenceItem = ({ refData }: { refData: any }) => {
   };
 
   return (
-    <div 
-      onClick={handleCopy}
+    <a
+      href={refData.url}
+      target="_blank"
+      rel="noopener noreferrer"
       className="group relative flex flex-col gap-1 p-3 bg-[#fff5f8] hover:bg-[#fff0f5] border border-[#f8bbd0] rounded-xl transition-all cursor-pointer"
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-[#880e4f] group-hover:text-[#ff4081] truncate font-medium flex-grow pr-2">{refData.title}</span>
-        {copied ? <Check size={12} className="text-emerald-500 flex-shrink-0" /> : <Copy size={12} className="text-[#f8bbd0] group-hover:text-[#ff4081] flex-shrink-0" />}
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex-shrink-0 rounded-full p-1 text-[#f8bbd0] transition-colors hover:bg-white hover:text-[#ff4081]"
+          aria-label="复制 Bilibili 链接"
+        >
+          {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+        </button>
       </div>
       <span className="text-[9px] text-[#f06292] font-bold truncate">UP: {refData.author} · {refData.play} 播放</span>
       {copied && (
         <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#ff4081] text-white text-[10px] px-2 py-1 rounded-full shadow-lg whitespace-nowrap">
-          链接已复制到剪贴板
+          链接已复制
         </span>
       )}
-    </div>
+    </a>
   );
 };
 
 export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
-  const [insight, setInsight] = useState<any>(null);
+  const [insight, setInsight] = useState<AnimeInsight | null>(null);
   const [loading, setLoading] = useState(false);
 
   const coverSrc =
@@ -61,7 +75,7 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
       const fetchInsight = async () => {
         setLoading(true);
         try {
-          const response = await axios.post('/api/anime-insight', { animeName: anime.name_cn || anime.name });
+          const response = await axios.post<AnimeInsight>('/api/anime-insight', { animeName: anime.name_cn || anime.name });
           setInsight(response.data);
         } catch (error) {
           console.error('Error fetching insight:', error);
@@ -99,9 +113,11 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
 
             {/* Left: Info */}
             <div className="md:w-1/3 h-64 md:h-auto relative border-r border-[#fce4ec]">
-              <img
+              <Image
                 src={coverSrc}
                 alt={anime.name_cn || anime.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1a0610]/90 via-transparent to-transparent flex flex-col justify-end p-8">
@@ -134,7 +150,7 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
                       <div className="flex items-center gap-2 text-[#ff4081] font-black uppercase tracking-widest text-xs">
                         <TrendingUp size={18} /> AI 深度洞察
                       </div>
-                      <span className="text-[10px] bg-[#ff80ab] text-white px-3 py-1 rounded-full font-black uppercase tracking-tighter shadow-sm">GPT-4o 分析</span>
+                      <span className="text-[10px] bg-[#ff80ab] text-white px-3 py-1 rounded-full font-black uppercase tracking-tighter shadow-sm">AI 分析</span>
                     </div>
                     <p className="text-xl font-bold leading-relaxed text-[#4a148c] mb-6 relative z-10">{insight.consensus}</p>
                     {insight.weighted_score !== 'N/A' && (
@@ -173,8 +189,8 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
                       <Users size={18} /> 大 UP 主深度点评
                     </div>
                     <div className="space-y-4">
-                      {insight.expert_opinions.map((o: any, i: number) => {
-                        const isKOL = insight.references?.some((r: any) => r.author === o.author && r.isKOL);
+                      {insight.expert_opinions.map((o, i) => {
+                        const isKOL = insight.references?.some((r) => r.author === o.author && r.isKOL);
                         return (
                           <div key={i} className={`p-6 rounded-[2rem] shadow-sm border-2 ${
                             isKOL 
@@ -192,7 +208,7 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
                                 {isKOL && <span className="ml-2 text-[10px] bg-[#ff4081] text-white px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">认证大UP</span>}
                               </span>
                             </div>
-                            <p className="text-sm text-[#880e4f] leading-relaxed font-bold italic">"{o.opinion}"</p>
+                            <p className="text-sm text-[#880e4f] leading-relaxed font-bold italic">“{o.opinion}”</p>
                           </div>
                         );
                       })}
@@ -206,10 +222,10 @@ export const AnimeDetail = ({ anime, isOpen, onClose }: AnimeDetailProps) => {
                         <div className="flex items-center gap-2 text-[#f06292] font-black uppercase tracking-widest text-[10px]">
                           <Play size={16} /> 原始参考资料 (Bilibili)
                         </div>
-                        <span className="text-[10px] bg-[#fce4ec] text-[#ff4081] px-3 py-1 rounded-full font-black shadow-sm">点击复制链接</span>
+                        <span className="text-[10px] bg-[#fce4ec] text-[#ff4081] px-3 py-1 rounded-full font-black shadow-sm">点击卡片打开 Bilibili</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {insight.references.slice(0, 4).map((ref: any) => (
+                        {insight.references.slice(0, 4).map((ref) => (
                           <ReferenceItem key={ref.url} refData={ref} />
                         ))}
                       </div>

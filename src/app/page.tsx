@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { getAnimeCalendar } from '../services/bangumi';
-import { CalendarDay, Anime } from '../types/anime';
+import { Anime, AnimeSummary } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { AnimeDetail } from '../components/AnimeDetail';
-import { Sparkles, TrendingUp, LayoutList, SortAsc, Filter, History } from 'lucide-react';
+import { Sparkles, TrendingUp, LayoutList, SortAsc, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -27,7 +27,7 @@ export default function Home() {
     const fetchAndProcessData = async () => {
       try {
         const calendarData = await getAnimeCalendar();
-        let flattened = calendarData.flatMap(day => day.items);
+        const flattened = calendarData.flatMap(day => day.items);
         const uniqueAnime = Array.from(new Map(flattened.map(item => [item.id, item])).values());
         
         // 分离长篇连载和当季新番
@@ -65,10 +65,10 @@ export default function Home() {
   const fetchSummaries = async (items: Anime[]) => {
     try {
       const response = await axios.post('/api/anime-summaries', { animeItems: items });
-      const { summaries } = response.data;
+      const { summaries } = response.data as { summaries: AnimeSummary[] };
       
       setAnimeList(prev => prev.map(anime => {
-        const found = summaries.find((s: any) => s.id === anime.id);
+        const found = summaries.find((s) => s.id === anime.id);
         return found ? { ...anime, summary: found.summary } : anime;
       }));
     } catch (err) {
@@ -101,11 +101,11 @@ export default function Home() {
                 <Sparkles className="text-white" size={24} />
               </div>
               <h1 className="text-3xl font-black tracking-tight">
-                Animax <span className="text-[#e88fb2]">Insight</span>
+                Anime<span className="text-[#e88fb2]">Pulse</span>
               </h1>
             </motion.div>
             <p className="text-[#705463] max-w-md text-sm leading-relaxed">
-              实时追踪本季度最热番剧，聚合 B 站/Bangumi 深度舆论，为你打造的柔和看板
+              聚合 Bangumi 与 Bilibili 公开线索，用 AI 追踪番剧口碑、热度与社区共识
             </p>
           </div>
 

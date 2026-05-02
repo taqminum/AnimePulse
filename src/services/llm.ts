@@ -1,6 +1,43 @@
-import OpenAI from 'openai';
+import { createAiClient } from '@/lib/ai';
+import { incrementMetric, recordTiming } from '@/lib/metrics';
+import { AnimeInsight, BilibiliReference, ExpertOpinion } from '@/types/anime';
 
-export const summarizeAnimeInsight = async (animeName: string, searchResults: any[]) => {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const toStringArray = (value: unknown, fallback: string[]) => {
+  if (!Array.isArray(value)) return fallback;
+  const items = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+  return items.length > 0 ? items : fallback;
+};
+
+const toExpertOpinions = (value: unknown): ExpertOpinion[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter(isRecord).map((item) => ({
+    author: typeof item.author === 'string' ? item.author : '未知 UP 主',
+    opinion: typeof item.opinion === 'string' ? item.opinion : '暂无明确观点。',
+  }));
+};
+
+export const normalizeInsight = (value: unknown, animeName: string): AnimeInsight => {
+  const data = isRecord(value) ? value : {};
+
+  return {
+    weighted_score: typeof data.weighted_score === 'string' ? data.weighted_score : 'N/A',
+    consensus: typeof data.consensus === 'string'
+      ? data.consensus
+      : `暂未获得《${animeName}》的稳定 AI 洞察。`,
+    highlights: toStringArray(data.highlights, ['暂无名场面']),
+    expert_opinions: toExpertOpinions(data.expert_opinions),
+    trend: typeof data.trend === 'string' ? data.trend : '数据收集不足',
+  };
+};
+
+export const summarizeAnimeInsight = async (
+  animeName: string,
+  searchResults: BilibiliReference[]
+): Promise<AnimeInsight | null> => {
   const contextData = searchResults.map(r => 
     `UP主: ${r.author} ${r.isKOL ? '(认证/头部UP)' : ''}\n标题: ${r.title}\n简介: ${r.description}\n播放量: ${r.play}`
   ).join('\n---\n');
@@ -34,38 +71,40 @@ export const summarizeAnimeInsight = async (animeName: string, searchResults: an
   `;
 
   try {
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-    const isDemoMode = !openaiApiKey || openaiApiKey === 'your-api-key';
+    const startedAt = Date.now();
+    const { client, config } = createAiClient();
 
-    if (isDemoMode) {
+    if (!config.configured || !client) {
+      incrementMetric('ai.demo_mode');
       // 演示模式：如果没有 API Key，根据是否有真实搜索结果来返回 Mock 数据
       const hasRealData = searchResults && searchResults.length > 0;
       return {
-        "weighted_score": hasRealData ? (8.0 + Math.random() * 1.5).toFixed(1) : "N/A",
-        "consensus": hasRealData 
+        weighted_score: hasRealData ? (8.0 + Math.random() * 1.5).toFixed(1) : 'N/A',
+        consensus: hasRealData 
           ? `基于 B 站 ${searchResults.length} 条真实视频汇总：该作在社区引起了广泛讨论，UP主 @${searchResults[0].author} 等对其评价较高。`
           : `暂无实时舆论数据，建议手动搜索《${animeName}》查看。`,
-        "highlights": hasRealData 
-          ? [`根据 ${searchResults[0].title} 等视频整理中...`, "精彩片段：见参考资料"] 
-          : ["暂无名场面"],
-        "expert_opinions": hasRealData 
+        highlights: hasRealData 
+          ? [`根据 ${searchResults[0].title} 等视频整理中...`, '精彩片段：见参考资料'] 
+          : ['暂无名场面'],
+        expert_opinions: hasRealData 
           ? searchResults.slice(0, 2).map(r => ({ author: r.author, opinion: `其视频“${r.title}”中表达了对本作的关注。` }))
           : [],
-        "trend": hasRealData ? "讨论热度持续上升" : "数据收集不足"
+        trend: hasRealData ? '讨论热度持续上升' : '数据收集不足'
       };
     }
 
-    const openai = new OpenAI({ apiKey: openaiApiKey, baseURL });
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o', // or gpt-3.5-turbo
+    const response = await client.chat.completions.create({
+      model: config.model,
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
     });
 
-    return JSON.parse(response.choices[0].message.content || '{}');
+    const parsed = JSON.parse(response.choices[0].message.content || '{}') as unknown;
+    incrementMetric('ai.success');
+    recordTiming('ai.duration_ms', Date.now() - startedAt);
+    return normalizeInsight(parsed, animeName);
   } catch (error) {
+    incrementMetric('ai.error');
     console.error('Error calling LLM:', error);
     return null;
   }

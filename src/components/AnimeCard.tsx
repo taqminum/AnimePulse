@@ -1,8 +1,9 @@
 'use client';
 
 import { Anime } from '../types/anime';
-import { Star, MessageCircle, Play, TrendingUp, Users, Calendar } from 'lucide-react';
+import { Star, Play, TrendingUp, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -36,9 +37,11 @@ export const AnimeCard = ({ anime, onClick, index }: AnimeCardProps) => {
 
       {/* Cover Image */}
       <div className="flex-shrink-0 w-24 h-32 relative rounded-2xl overflow-hidden shadow-md">
-        <img
+        <Image
           src={coverSrc}
           alt={anime.name_cn || anime.name}
+          fill
+          sizes="96px"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-[#f4a7c3]/10 group-hover:bg-transparent transition-colors duration-300" />
